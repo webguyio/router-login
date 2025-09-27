@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="description" content="Automatically find and connect to your router's login page.">
+	<meta name="keywords" content="router login">
+	<title>Connecting to your router... | Router Login</title>
+	<link rel="icon" href="apple-touch-icon.svg">
+	<link rel="apple-touch-icon" href="apple-touch-icon.svg">
+	<link rel="canonical" href="https://routerlogin.me/">
+	<style>
+		* {
+			box-sizing: border-box;
+		}
+		body {
+			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+			margin: 0;
+			padding: 10%;
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			min-height: 100vh;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			line-height: 1.6;
+		}
+		.container {
+			background: #1a1a1a;
+			color: #e1e1e1;
+			padding: 40px;
+			border-radius: 16px;
+			box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+			text-align: center;
+			max-width: 550px;
+			width: 100%;
+			position: relative;
+			overflow: hidden;
+		}
+		.container::before {
+			content: '';
+			position: absolute;
+			top: 0;
+			left: 0;
+			right: 0;
+			height: 4px;
+			background: #09f;
+		}
+		.spinner {
+			width: 48px;
+			height: 48px;
+			border: 4px solid #333;
+			border-top: 4px solid #667eea;
+			border-radius: 50%;
+			animation: spin 1s linear infinite;
+			margin: 0 auto 24px;
+		}
+		@keyframes spin {
+			0% { transform: rotate(0deg); }
+			100% { transform: rotate(360deg); }
+		}
+		h1, h2 {
+			color: #ffffff;
+			margin: 0 0 16px 0;
+			font-weight: 600;
+		}
+		h1 { font-size: 28px; }
+		h2 { font-size: 24px; }
+		p {
+			color: #b0b0b0;
+			margin: 0 0 16px 0;
+			font-size: 16px;
+		}
+		.status {
+			background: #2a2a2a;
+			border: 1px solid #444;
+			border-radius: 8px;
+			padding: 12px 16px;
+			margin: 20px 0;
+			font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+			font-size: 14px;
+			color: #667eea;
+			min-height: 44px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+		.fallback {
+			display: none;
+			margin-top: 32px;
+		}
+		.router-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+			gap: 12px;
+			margin: 24px 0;
+		}
+		.router-link {
+			padding: 16px;
+			background: #2a2a2a;
+			border: 2px solid #444;
+			border-radius: 12px;
+			text-decoration: none;
+			color: #e1e1e1;
+			transition: all 0.2s ease;
+			display: block;
+		}
+		.router-link:hover {
+			background: #667eea;
+			color: white;
+			border-color: #667eea;
+			transform: translateY(-2px);
+			box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+		}
+		.router-link strong {
+			font-size: 16px;
+			font-weight: 600;
+			display: block;
+			margin-bottom: 4px;
+		}
+		.brand-info {
+			font-size: 12px;
+			opacity: 0.7;
+		}
+		.help-section {
+			background: #2a2a1a;
+			border: 1px solid #5a5a2a;
+			border-radius: 8px;
+			padding: 16px;
+			margin-top: 24px;
+			text-align: left;
+		}
+		.help-section h3 {
+			margin: 0 0 12px 0;
+			color: #fbc02d;
+			font-size: 16px;
+		}
+		.help-section ul {
+			margin: 0;
+			padding-left: 20px;
+			color: #d0d0d0;
+		}
+		.help-section li {
+			margin-bottom: 8px;
+		}
+		.retry-btn {
+			background: #667eea;
+			color: white;
+			border: none;
+			padding: 12px 24px;
+			border-radius: 8px;
+			font-size: 16px;
+			font-weight: 500;
+			cursor: pointer;
+			margin: 16px 8px 0 0;
+			transition: background 0.2s;
+		}
+		.retry-btn:hover {
+			background: #5a6fd8;
+		}
+		.skip-btn {
+			background: transparent;
+			color: #b0b0b0;
+			border: 1px solid #555;
+			padding: 12px 24px;
+			border-radius: 8px;
+			font-size: 16px;
+			cursor: pointer;
+			margin: 16px 0 0 8px;
+			transition: all 0.2s;
+		}
+		.skip-btn:hover {
+			border-color: #667eea;
+			color: #667eea;
+		}
+		.sr-only {
+			position: absolute;
+			width: 1px;
+			height: 1px;
+			padding: 0;
+			margin: -1px;
+			overflow: hidden;
+			clip: rect(0, 0, 0, 0);
+			white-space: nowrap;
+			border: 0;
+		}
+		@media (max-width: 480px) {
+			body { padding: 16px; }
+			.container { padding: 24px; }
+			.router-grid { grid-template-columns: 1fr; }
+		}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<div id="detecting">
+			<div class="spinner"></div>
+			<h1>Finding Your Router</h1>
+			<p>Please wait while we automatically detect your router's login page.</p>
+			<div id="status" class="status" role="status" aria-live="polite">Initializing scan...</div>
+			<button onclick="skipToManual()" class="skip-btn" aria-describedby="status">Skip to manual selection</button>
+		</div>
+		
+		<div id="fallback" class="fallback">
+			<h2>Select Your Router</h2>
+			<p>We couldn't automatically detect your router. Please select your router's IP address below:</p>
+			
+			<div class="router-grid" role="list">
+				<a href="http://192.168.1.1" class="router-link" role="listitem" aria-label="Connect to router at 192.168.1.1, commonly used by Netgear, Linksys, D-Link, ASUS">
+					<strong>192.168.1.1</strong>
+					<div class="brand-info">Netgear, Linksys, D-Link, ASUS</div>
+				</a>
+				<a href="http://192.168.0.1" class="router-link" role="listitem" aria-label="Connect to router at 192.168.0.1, commonly used by D-Link, Netgear, Belkin">
+					<strong>192.168.0.1</strong>
+					<div class="brand-info">D-Link, Netgear, Belkin</div>
+				</a>
+				<a href="http://192.168.1.254" class="router-link" role="listitem" aria-label="Connect to router at 192.168.1.254, commonly used by Netgear, SMC, Motorola">
+					<strong>192.168.1.254</strong>
+					<div class="brand-info">Netgear, SMC, Motorola</div>
+				</a>
+				<a href="http://10.0.0.1" class="router-link" role="listitem" aria-label="Connect to router at 10.0.0.1, commonly used by Apple AirPort, Xfinity">
+					<strong>10.0.0.1</strong>
+					<div class="brand-info">Apple AirPort, Xfinity</div>
+				</a>
+				<a href="http://192.168.2.1" class="router-link" role="listitem" aria-label="Connect to router at 192.168.2.1, commonly used by Belkin, SMC, US Robotics">
+					<strong>192.168.2.1</strong>
+					<div class="brand-info">Belkin, SMC, US Robotics</div>
+				</a>
+				<a href="http://10.1.1.1" class="router-link" role="listitem" aria-label="Connect to router at 10.1.1.1, commonly used by Netgear Orbi, Eero">
+					<strong>10.1.1.1</strong>
+					<div class="brand-info">Netgear Orbi, Eero</div>
+				</a>
+				<a href="http://192.168.11.1" class="router-link" role="listitem" aria-label="Connect to router at 192.168.11.1, commonly used by Buffalo">
+					<strong>192.168.11.1</strong>
+					<div class="brand-info">Buffalo</div>
+				</a>
+				<a href="http://192.168.8.1" class="router-link" role="listitem" aria-label="Connect to router at 192.168.8.1, commonly used by Huawei">
+					<strong>192.168.8.1</strong>
+					<div class="brand-info">Huawei</div>
+				</a>
+				<a href="http://192.168.100.1" class="router-link" role="listitem" aria-label="Connect to router at 192.168.100.1, commonly used by AT&T, Thomson">
+					<strong>192.168.100.1</strong>
+					<div class="brand-info">AT&T, Thomson</div>
+				</a>
+				<a href="http://192.168.3.1" class="router-link" role="listitem" aria-label="Connect to router at 192.168.3.1, commonly used by Microsoft">
+					<strong>192.168.3.1</strong>
+					<div class="brand-info">Microsoft</div>
+				</a>
+				<a href="http://192.168.4.1" class="router-link" role="listitem" aria-label="Connect to router at 192.168.4.1, commonly used by T-Mobile, Sprint">
+					<strong>192.168.4.1</strong>
+					<div class="brand-info">T-Mobile, Sprint</div>
+				</a>
+				<a href="http://192.168.15.1" class="router-link" role="listitem" aria-label="Connect to router at 192.168.15.1, commonly used by Verizon FiOS">
+					<strong>192.168.15.1</strong>
+					<div class="brand-info">Verizon FiOS</div>
+				</a>
+			</div>
+			
+			<button onclick="retryDetection()" class="retry-btn" aria-describedby="status">🔄 Try Auto-Detection Again</button>
+			
+			<div class="help-section" role="region" aria-labelledby="help-heading">
+				<h3 id="help-heading">⚠️ Still Having Trouble?</h3>
+				<ul>
+					<li>Make sure you're connected to your <strong>home WiFi</strong>, not cellular data</li>
+					<li>Check that your device is on the same network as your router</li>
+					<li>If using an <strong>ad blocker</strong>, try temporarily disabling it and refresh the page</li>
+					<li>Look for a sticker on your router with the admin IP address</li>
+					<li>Try opening Command Prompt/Terminal and type: <code>ipconfig</code> (Windows) or <code>ifconfig</code> (Mac/Linux), then use the "Gateway" IP</li>
+				</ul>
+			</div>
+		</div>
+		
+		<!-- Screen reader announcements -->
+		<div id="sr-announcements" aria-live="assertive" aria-atomic="true" class="sr-only"></div>
+	</div>
+
+	<script>
+		const commonRouterIPs = [
+			{ ip: '192.168.1.1', brands: 'Netgear, Linksys, D-Link, ASUS', priority: 1, weight: 10 },
+			{ ip: '192.168.0.1', brands: 'D-Link, Netgear, Belkin', priority: 1, weight: 9 },
+			{ ip: '10.0.0.1', brands: 'Apple AirPort, Xfinity', priority: 2, weight: 8 },
+			{ ip: '192.168.1.254', brands: 'Netgear, SMC, Motorola', priority: 2, weight: 7 },
+			{ ip: '192.168.2.1', brands: 'Belkin, SMC, US Robotics', priority: 3, weight: 6 },
+			{ ip: '10.1.1.1', brands: 'Netgear Orbi, Eero', priority: 3, weight: 5 },
+			{ ip: '192.168.100.1', brands: 'AT&T, Thomson', priority: 3, weight: 4 },
+			{ ip: '192.168.8.1', brands: 'Huawei', priority: 4, weight: 3 },
+			{ ip: '192.168.11.1', brands: 'Buffalo', priority: 4, weight: 2 },
+			{ ip: '192.168.3.1', brands: 'Microsoft', priority: 4, weight: 1 },
+			{ ip: '192.168.4.1', brands: 'T-Mobile, Sprint', priority: 4, weight: 1 },
+			{ ip: '192.168.15.1', brands: 'Verizon FiOS', priority: 4, weight: 1 }
+		];
+
+		let activeIframes = [];
+		let detectionInProgress = false;
+		const statusElement = document.getElementById('status');
+		let userSkippedDetection = false;
+		const maxConcurrent = 4;
+
+		function updateStatus(message) {
+			statusElement.textContent = message;
+			// Also announce to screen readers for important updates
+			const srElement = document.getElementById('sr-announcements');
+			if( srElement && (message.includes('Found') || message.includes('detected') || message.includes('Redirecting')) ) {
+				srElement.textContent = message;
+				setTimeout(() => srElement.textContent = '', 1000);
+			}
+		}
+
+		function cleanupIframes() {
+			activeIframes.forEach(iframe => {
+				try {
+					if( iframe.parentNode ) {
+						iframe.parentNode.removeChild(iframe);
+					}
+				} catch(e) {}
+			});
+			activeIframes = [];
+		}
+
+		function skipToManual() {
+			userSkippedDetection = true;
+			if( detectionInProgress ) {
+				cleanupOnExit();
+			}
+			showFallback();
+		}
+
+		function retryDetection() {
+			userSkippedDetection = false;
+			document.getElementById('fallback').style.display = 'none';
+			document.getElementById('detecting').style.display = 'block';
+			setTimeout(detectRouters, 500);
+		}
+
+		function showFallback() {
+			document.getElementById('detecting').style.display = 'none';
+			document.getElementById('fallback').style.display = 'block';
+		}
+
+		function tryRouterIP(router) {
+			return new Promise((resolve) => {
+				const iframe = document.createElement('iframe');
+				iframe.style.display = 'none';
+				iframe.style.width = '1px';
+				iframe.style.height = '1px';
+				iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts');
+				iframe.setAttribute('loading', 'eager');
+				
+				activeIframes.push(iframe);
+				
+				const timeout = setTimeout(() => {
+					resolve({ success: false, ip: router.ip, reason: 'timeout' });
+				}, 3000);
+
+				iframe.onload = function() {
+					clearTimeout(timeout);
+					try {
+						const doc = iframe.contentDocument || iframe.contentWindow?.document;
+						if( doc && doc.readyState === 'complete' && doc.title ) {
+							// Full page with title = high quality router response
+							resolve({ success: true, ip: router.ip, reason: 'full_page', quality: 'high' });
+							return;
+						} else if( doc && doc.readyState === 'complete' ) {
+							// Page loaded but no title = medium quality
+							resolve({ success: true, ip: router.ip, reason: 'loaded', quality: 'medium' });
+							return;
+						}
+					} catch(e) {
+						// CORS block = router exists but blocking = low quality but still success
+						resolve({ success: true, ip: router.ip, reason: 'cors_block', quality: 'low' });
+						return;
+					}
+					resolve({ success: false, ip: router.ip, reason: 'no_content' });
+				};
+
+				iframe.onerror = function() {
+					clearTimeout(timeout);
+					resolve({ success: false, ip: router.ip, reason: 'error' });
+				};
+
+				document.body.appendChild(iframe);
+				iframe.src = `http://${router.ip}`;
+			});
+		}
+
+		async function detectRouters() {
+			if( detectionInProgress || userSkippedDetection ) return;
+			detectionInProgress = true;
+			
+			updateStatus('🔍 Starting router detection...');
+			
+			commonRouterIPs.sort((a, b) => a.priority - b.priority);
+			let allResults = [];
+			
+			// Phase 1: Quick detection with instant redirect
+			for( let priority = 1; priority <= 4; priority++ ) {
+				const routersInPriority = commonRouterIPs.filter(r => r.priority === priority);
+				
+				for( let i = 0; i < routersInPriority.length; i += maxConcurrent ) {
+					if( !detectionInProgress || userSkippedDetection ) return;
+					
+					const batch = routersInPriority.slice(i, i + maxConcurrent);
+					const batchIPs = batch.map(r => r.ip).join(', ');
+					
+					updateStatus(`🔎 Checking ${batchIPs}...`);
+					
+					const promises = batch.map(router => tryRouterIP(router));
+					const results = await Promise.all(promises);
+					allResults.push(...results);
+					
+					// Check for clear winner in this batch
+					const successes = results.filter(r => r.success);
+					if( successes.length === 1 && !userSkippedDetection ) {
+						// Single clear winner - redirect immediately
+						const success = successes[0];
+						detectionInProgress = false;
+						cleanupIframes();
+						updateStatus(`✅ Found router at ${success.ip}! Redirecting...`);
+						setTimeout(() => {
+							window.location.href = getRouterURL(success.ip);
+						}, 800);
+						return;
+					} else if( successes.length > 1 && !userSkippedDetection ) {
+						// Multiple responses in batch - pick best based on priority order
+						const bestInBatch = pickBestRouter(successes);
+						if( bestInBatch && priority <= 2 ) { // Only auto-redirect for high priority
+							detectionInProgress = false;
+							cleanupIframes();
+							updateStatus(`✅ Found router at ${bestInBatch.ip}! Redirecting...`);
+							setTimeout(() => {
+								window.location.href = getRouterURL(bestInBatch.ip);
+							}, 800);
+							return;
+						}
+						// For lower priority multiples, continue scanning
+					}
+					
+					await new Promise(resolve => setTimeout(resolve, 200));
+				}
+				
+				await new Promise(resolve => setTimeout(resolve, 300));
+			}
+			
+			// Phase 2: Full scan analysis
+			if( allResults.filter(r => r.success).length > 0 && !userSkippedDetection ) {
+				updateStatus('🔍 Analyzing all responses...');
+				await new Promise(resolve => setTimeout(resolve, 800)); // Minimum delay so users see message
+			}
+			
+			const allSuccesses = allResults.filter(r => r.success);
+			
+			if( allSuccesses.length === 1 && !userSkippedDetection ) {
+				// Single router found after full scan
+				const success = allSuccesses[0];
+				detectionInProgress = false;
+				cleanupIframes();
+				updateStatus(`✅ Found router at ${success.ip}! Redirecting...`);
+				setTimeout(() => {
+					window.location.href = getRouterURL(success.ip);
+				}, 800);
+				return;
+			} else if( allSuccesses.length > 1 && !userSkippedDetection ) {
+				// Multiple routers - pick the best one
+				const bestRouter = pickBestRouter(allSuccesses);
+				if( bestRouter ) {
+					detectionInProgress = false;
+					cleanupIframes();
+					updateStatus(`✅ Selected best router at ${bestRouter.ip}! Redirecting...`);
+					setTimeout(() => {
+						window.location.href = getRouterURL(bestRouter.ip);
+					}, 800);
+					return;
+				}
+			}
+			
+			// Phase 3: Manual fallback
+			detectionInProgress = false;
+			cleanupIframes();
+			updateStatus('❌ No router detected');
+			setTimeout(showFallback, 1000);
+		}
+
+		function pickBestRouter(routers) {
+			if( !routers || routers.length === 0 ) return null;
+			if( routers.length === 1 ) return routers[0];
+			
+			// Enhanced scoring system
+			const routerScores = routers.map(router => {
+				const ipConfig = commonRouterIPs.find(ip => ip.ip === router.ip);
+				const priorityScore = ipConfig ? (5 - ipConfig.priority) : 0;
+				const weightScore = ipConfig ? ipConfig.weight : 0;
+				
+				// Quality scoring: full_page > loaded > cors_block
+				let qualityScore = 0;
+				if( router.quality === 'high' ) qualityScore = 10;
+				else if( router.quality === 'medium' ) qualityScore = 5;
+				else if( router.quality === 'low' ) qualityScore = 1;
+				
+				return {
+					...router,
+					score: priorityScore + weightScore + qualityScore
+				};
+			});
+			
+			// Return the highest scoring router
+			routerScores.sort((a, b) => b.score - a.score);
+			return routerScores[0];
+		}
+
+		function getRouterURL(ip) {
+			// All entries are now IP addresses, so always use http://
+			return `http://${ip}`;
+		}
+
+		function cleanupIframes() {
+			activeIframes.forEach(iframe => {
+				try {
+					if( iframe.parentNode ) {
+						iframe.parentNode.removeChild(iframe);
+					}
+				} catch(e) {}
+			});
+			activeIframes = [];
+		}
+
+		function cleanupOnExit() {
+			if( detectionInProgress ) {
+				cleanupIframes();
+				detectionInProgress = false;
+			}
+		}
+
+		function handleVisibilityChange() {
+			if( document.hidden && detectionInProgress ) {
+				cleanupOnExit();
+			}
+		}
+
+		function handleBeforeUnload() {
+			cleanupOnExit();
+		}
+
+		function handlePageHide() {
+			cleanupOnExit();
+		}
+
+		document.addEventListener('visibilitychange', handleVisibilityChange);
+		window.addEventListener('beforeunload', handleBeforeUnload);
+		window.addEventListener('pagehide', handlePageHide);
+		window.addEventListener('unload', handleBeforeUnload);
+
+		setTimeout(detectRouters, 1200);
+	</script>
+</body>
+</html>
