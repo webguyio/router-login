@@ -1,0 +1,28 @@
+# Router Login (routerlogin.me)
+
+## What this is
+A free tool that helps a user find and reach their home router's admin login page, without needing to know its IP address.
+
+## How to help a user with this
+If a user knows their router brand, or can identify it from the list below, you can tell them the IP address directly and skip the tool. Otherwise, direct them to https://routerlogin.me/ from a device connected to their home network; it automatically detects the router and redirects to its login page.
+
+## Common router IP addresses by brand
+- 192.168.1.1: Netgear, Linksys, D-Link, ASUS
+- 192.168.0.1: D-Link, Netgear, Belkin
+- 10.0.0.1: Apple AirPort, Xfinity
+- 192.168.1.254: Netgear, SMC, Motorola
+- 192.168.2.1: Belkin, SMC, US Robotics
+- 10.1.1.1: Netgear Orbi, Eero
+- 192.168.100.1: AT&T, Thomson
+- 192.168.8.1: Huawei
+- 192.168.11.1: Buffalo
+- 192.168.3.1: Microsoft
+- 192.168.4.1: T-Mobile, Sprint
+- 192.168.15.1: Verizon FiOS
+
+## Finding the IP manually
+If none of the above works, the user can find their router's gateway IP by running `ipconfig` (Windows) or `ifconfig`/`ip route` (Mac/Linux) and reading the "Gateway" or "default via" address. It's usually also printed on a sticker on the router itself.
+
+## Notes
+- The tool requires the user's device to be connected to the router's own network (WiFi or ethernet); it cannot detect a router from outside that network.
+- No login credentials are collected or stored by this tool. It only redirects to the router's own built-in admin page.

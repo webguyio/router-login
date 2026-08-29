@@ -32,16 +32,16 @@
 	Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
 </IfModule>
 
-# Force HTTPS
 RewriteEngine On
+
+# Force HTTPS
 RewriteCond %{HTTPS} off
 RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
 # Remove www
-RewriteEngine On
 RewriteCond %{HTTP_HOST} ^www\.(.*)$ [NC]
 RewriteRule ^(.*)$ https://%1/$1 [R=301,L]
 
-# Custom error pages
-ErrorDocument 404 /index.html
-ErrorDocument 500 /index.html
+# Custom error messages
+ErrorDocument 404 "Page not found"
+ErrorDocument 500 "Server error"

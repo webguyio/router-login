@@ -33,6 +33,7 @@ The website detects routers from these manufacturers:
 
 - `index.html` - Main website file (complete, standalone)
 - `robots.txt` - Search engine directives
+- `llms.txt` - AI assistant directives
 - `.htaccess` - Apache server configuration
 - `sitemap.xml` - XML sitemap for search engines
 - `apple-touch-icon.svg` - SVG icon for site icon
